@@ -6,14 +6,54 @@ import * as custom from "aws-cdk-lib/custom-resources";
 import { generateBatch } from '../shared/util';
 import { reviews } from '../seed/reviews';
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import { UserPool } from "aws-cdk-lib/aws-cognito";
+import * as node from "aws-cdk-lib/aws-lambda-nodejs";
 
 import { Construct } from 'constructs';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class DsAssignment1Stack extends cdk.Stack {
+  private auth: apig.IResource;
+  private userPoolId: string;
+  private userPoolClientId: string;
+
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // ############
+    // ### AUTH ###
+    // ############
+
+    //User pool
+    const userPool = new UserPool(this, "Assign1UserPool", {
+      signInAliases: { username: true, email: true },
+      selfSignUpEnabled: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.userPoolId = userPool.userPoolId;
+
+    const appClient = userPool.addClient("Assign1AppClient", {
+      authFlows: { userPassword: true },
+    });
+
+    this.userPoolClientId = appClient.userPoolClientId;
+
+    const authApi = new apig.RestApi(this, "Assign1AuthServiceApi", {
+      description: "Authentication Service RestApi",
+      endpointTypes: [apig.EndpointType.REGIONAL],
+      defaultCorsPreflightOptions: {
+        allowOrigins: apig.Cors.ALL_ORIGINS,
+      },
+    });
+
+    this.auth = authApi.root.addResource("auth");
+
+    // #####################
+    // ### DYNAMODB INIT ###
+    // #####################
+
+    //DynamoDB table
     const reviewsTable = new dynamodb.Table(this, "reviewsTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: "MovieId", type: dynamodb.AttributeType.NUMBER },
@@ -38,6 +78,10 @@ export class DsAssignment1Stack extends cdk.Stack {
         resources: [reviewsTable.tableArn]
       }),
     });
+
+    // #################
+    // ### FUNCTIONS ###
+    // #################
 
     //get all movies for input movie ID
     const getMovieReviewsFn = new lambdanode.NodejsFunction(
@@ -87,6 +131,9 @@ export class DsAssignment1Stack extends cdk.Stack {
     reviewsTable.grantReadWriteData(newReviewFn)
     reviewsTable.grantReadData(getMovieReviewsByAuthorFn)
 
+    // #####################
+    // ### API ENDPOINTS ###
+    // #####################
 
     //REST API
     const api = new apig.RestApi(this, "RestAPI", {
@@ -132,6 +179,35 @@ export class DsAssignment1Stack extends cdk.Stack {
       new apig.LambdaIntegration(getMovieReviewsByAuthorFn, { proxy: true })
     )
 
-
   }
+
+  private addAuthRoute(   //private method to reduce code duplicate
+    resourceName: string,
+    method: string,
+    fnName: string,
+    fnEntry: string,
+    allowCognitoAccess?: boolean
+  ): void {
+    const commonFnProps = {
+      architecture: lambda.Architecture.ARM_64,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      handler: "handler",
+      environment: {
+        USER_POOL_ID: this.userPoolId,
+        CLIENT_ID: this.userPoolClientId,
+        REGION: cdk.Aws.REGION
+      },
+    };
+    
+    const resource = this.auth.addResource(resourceName);
+    
+    const fn = new node.NodejsFunction(this, fnName, {
+      ...commonFnProps,
+      entry: `${__dirname}/../lambda/auth/${fnEntry}`,
+    });
+
+    resource.addMethod(method, new apig.LambdaIntegration(fn));
+  }  // end private method
 }
