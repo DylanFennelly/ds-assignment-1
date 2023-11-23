@@ -56,6 +56,7 @@ export class DsAssignment1Stack extends cdk.Stack {
       }
     )
 
+    //add new movie review
     const newReviewFn = new lambdanode.NodejsFunction(this, "AddMovieFn", {
       architecture: lambda.Architecture.ARM_64,
       runtime: lambda.Runtime.NODEJS_16_X,
@@ -68,9 +69,23 @@ export class DsAssignment1Stack extends cdk.Stack {
       },
     });
 
+    //get movie reviews by reviewer name
+    const getMovieReviewsByAuthorFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByAuthorFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambda/getMovieReviewsByAuthor.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
+
     //table permissions
     reviewsTable.grantReadData(getMovieReviewsFn)
     reviewsTable.grantReadWriteData(newReviewFn)
+    reviewsTable.grantReadData(getMovieReviewsByAuthorFn)
 
 
     //REST API
@@ -109,6 +124,14 @@ export class DsAssignment1Stack extends cdk.Stack {
       "GET",
       new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true })
     )
+
+    //specific move reviews by reviewer
+    const movieReviewsByAuthorEndpoint = movieReviewsEndpoint.addResource("{reviewerName}");
+    movieReviewsByAuthorEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieReviewsByAuthorFn, { proxy: true })
+    )
+
 
   }
 }

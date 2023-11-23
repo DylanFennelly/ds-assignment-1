@@ -10,45 +10,29 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         const parameters = event?.pathParameters;
         console.log("Paramters:", parameters)
         const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
-        const minRatingParam = event?.queryStringParameters?.minRating;
-        const minRating = minRatingParam ? parseInt(minRatingParam) : undefined;    //params are strings, need to convert to num (int)
+        const reviewerName = parameters?.reviewerName ? parameters.reviewerName : undefined;
+    
 
-        if (!movieId){
+        if (!movieId || !reviewerName){
             return {
                 statusCode: 404,
                 headers: {
                     "content-type": "application/json",
                   },
-                  body: JSON.stringify({ Message: "Missing movie Id" }),
+                  body: JSON.stringify({ Message: "Missing movie Id or reviewer name" }),
             };
         }
 
-        let commandInput: QueryCommandInput ={
-            TableName: process.env.TABLE_NAME, 
-        }
-
-        if (minRating){
-            commandInput = {
-                ...commandInput,
+        const commandOutput = await ddbDocClient.send(
+            new QueryCommand({          
+                TableName: process.env.TABLE_NAME,
                 KeyConditionExpression: "MovieId = :m",
-                FilterExpression: "Rating >= :r",           // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
+                FilterExpression: "ReviewerName = :rN",
                 ExpressionAttributeValues: {
                     ":m": movieId,
-                    ":r": minRating
+                    ":rN": reviewerName
                 },
-            }
-        }else{
-            commandInput = {
-                ...commandInput,
-                KeyConditionExpression: "MovieId = :m",
-                ExpressionAttributeValues: {
-                    ":m": movieId
-                },
-            }
-        }
-
-        const commandOutput = await ddbDocClient.send(      //Query command used -> get collection of items rather than single
-            new QueryCommand(commandInput)                  //https://www.tecracer.com/blog/2021/03/dynamodb-in-15-minutes.html
+            })
         );
 
         if(!commandOutput.Items || commandOutput.Items.length === 0){       // Query command always returns data even if nothing is found
@@ -57,7 +41,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
                 headers: {
                     "content-type": "application/json",
                 },
-                body: JSON.stringify({ Message: "No reviews found. Verify movie Id and minimum rating score and try again. Additionally, there may be no reviews for this movie yet" }),
+                body: JSON.stringify({ Message: "No reviews found. Verify movie Id and reviewer name and try again." }),
             };
         }
 

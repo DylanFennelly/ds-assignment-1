@@ -23,6 +23,13 @@ export const reviews : Review[] = [
         Rating: 10
     },
     {
+        MovieId: 2345,
+        ReviewerName: "ComicBookGuy",
+        ReviewDate: "2023-12-01",
+        Content: "Better than their last effort. Which is to say, it still sucks.",
+        Rating: 2
+    },
+    {
         MovieId: 9876,
         ReviewerName: "Kurisutina92",
         ReviewDate: "2023-11-23",
