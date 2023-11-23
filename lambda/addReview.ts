@@ -1,6 +1,11 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import Ajv from "ajv";
+import schema from "../shared/types.schema.json"
+
+const ajv = new Ajv()
+const isValidBodyParams = ajv.compile(schema.definitions["Review"] || {});
 
 const ddbDocClient = createDDbDocClient();
 
@@ -17,6 +22,19 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
                   body: JSON.stringify({ message: "Missing request body" }),
             }
         }
+
+        if (!isValidBodyParams(body)) {
+            return {
+              statusCode: 500,
+              headers: {
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({
+                message: `Input body does not match Reveiw schema.`,
+                schema: schema.definitions["Review"],
+              }),
+            };
+          }
 
         const commandOutput = await ddbDocClient.send(
             new PutCommand({
