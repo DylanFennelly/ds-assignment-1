@@ -40,7 +40,7 @@ export class DsAssignment1Stack extends cdk.Stack {
     });
 
     //get all movies for input movie ID
-    const getMovieReviews = new lambdanode.NodejsFunction(
+    const getMovieReviewsFn = new lambdanode.NodejsFunction(
       this,
       "GetMovieReviewsFn",
       {
@@ -56,8 +56,21 @@ export class DsAssignment1Stack extends cdk.Stack {
       }
     )
 
+    const newReviewFn = new lambdanode.NodejsFunction(this, "AddMovieFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambda/addReview.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
+
     //table permissions
-    reviewsTable.grantReadData(getMovieReviews)
+    reviewsTable.grantReadData(getMovieReviewsFn)
+    reviewsTable.grantReadWriteData(newReviewFn)
 
 
     //REST API
@@ -79,13 +92,22 @@ export class DsAssignment1Stack extends cdk.Stack {
     //API root - all endpoints branch from this
     const moviesEndpoint = api.root.addResource("movies");
 
+    //movie reviews (for post)
+    const reviewsEndpoint = moviesEndpoint.addResource("reviews")
+    reviewsEndpoint.addMethod(
+      "POST",
+      new apig.LambdaIntegration(newReviewFn, { proxy: true })
+    )
+
+
     //specific movie
     const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
 
+    //speicifc movie reviews
     const movieReviewsEndpoint = movieIdEndpoint.addResource("reviews");
     movieReviewsEndpoint.addMethod(
       "GET",
-      new apig.LambdaIntegration(getMovieReviews, { proxy: true })
+      new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true })
     )
 
   }

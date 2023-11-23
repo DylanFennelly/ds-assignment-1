@@ -31,7 +31,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
             })
         );
 
-        if(!commandOutput.Items || commandOutput.Items.length === 0){  // Query command always returns data even if nothing is found
+        if(!commandOutput.Items || commandOutput.Items.length === 0){       // Query command always returns data even if nothing is found
             return {                                                        // https://stackoverflow.com/questions/44337856/check-if-specific-object-is-empty-in-typescript
                 statusCode: 404,
                 headers: {
