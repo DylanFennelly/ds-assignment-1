@@ -47,7 +47,31 @@ export class DsAssignment1Stack extends cdk.Stack {
       },
     });
 
+    //Auth API
     this.auth = authApi.root.addResource("auth");
+
+    //signup
+    this.addAuthRoute(
+      "signup",
+      "POST",
+      "SignupFn",
+      'signup.ts'
+    );
+
+    //confirm signup
+    this.addAuthRoute(
+      "confirm_signup",
+      "POST",
+      "ConfirmFn",
+      "confirm-signup.ts"
+    );
+
+    //signout
+    this.addAuthRoute('signout', 'GET', 'SignoutFn', 'signout.ts');
+
+    //signin
+    this.addAuthRoute('signin', 'POST', 'SigninFn', 'signin.ts');
+
 
     // #####################
     // ### DYNAMODB INIT ###
