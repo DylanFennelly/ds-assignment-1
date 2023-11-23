@@ -5,6 +5,7 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as custom from "aws-cdk-lib/custom-resources";
 import { generateBatch } from '../shared/util';
 import { reviews } from '../seed/reviews';
+import * as apig from "aws-cdk-lib/aws-apigateway";
 
 import { Construct } from 'constructs';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -37,6 +38,55 @@ export class DsAssignment1Stack extends cdk.Stack {
         resources: [reviewsTable.tableArn]
       }),
     });
+
+    //get all movies for input movie ID
+    const getMovieReviews = new lambdanode.NodejsFunction(
+      this,
+      "GetMovieReviewsFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: `${__dirname}/../lambda/getMovieReviews.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: reviewsTable.tableName,
+          REGION: 'eu-west-1',
+        },
+      }
+    )
+
+    //table permissions
+    reviewsTable.grantReadData(getMovieReviews)
+
+
+    //REST API
+    const api = new apig.RestApi(this, "RestAPI", {
+      description: "Assignment 1 API",
+      deployOptions: {
+        stageName: "dev",
+      },
+      //CORS
+      defaultCorsPreflightOptions: {
+        allowHeaders: ["Content-Type", "X-Amz-Date"],
+        allowMethods: ["OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"],
+        allowCredentials: true,
+        allowOrigins: ["*"],
+      },
+    }
+    )
+
+    //API root - all endpoints branch from this
+    const moviesEndpoint = api.root.addResource("movies");
+
+    //specific movie
+    const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
+
+    const movieReviewsEndpoint = movieIdEndpoint.addResource("reviews");
+    movieReviewsEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getMovieReviews, { proxy: true })
+    )
 
   }
 }
