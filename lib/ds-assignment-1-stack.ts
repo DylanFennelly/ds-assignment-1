@@ -150,6 +150,19 @@ export class DsAssignment1Stack extends cdk.Stack {
       },
     });
 
+    //get all reviews by reviewer name
+    const getAllReviewsByAuthorFn = new lambdanode.NodejsFunction(this, "GetAllReviewsByAuthorFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambda/getAllReviewsByAuthor.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: reviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
+
 
     //authorizer
     const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
@@ -181,6 +194,7 @@ export class DsAssignment1Stack extends cdk.Stack {
     reviewsTable.grantReadData(getMovieReviewsFn)
     reviewsTable.grantReadWriteData(newReviewFn)
     reviewsTable.grantReadData(getMovieReviewsByAuthorFn)
+    reviewsTable.grantReadData(getAllReviewsByAuthorFn)
 
     // #####################
     // ### API ENDPOINTS ###
@@ -214,6 +228,13 @@ export class DsAssignment1Stack extends cdk.Stack {
         authorizer: requestAuthorizer,
         authorizationType: apig.AuthorizationType.CUSTOM,
       }
+    )
+
+    //all reviews by reviewer
+    const getAllReviewsByAuthorEndpoint = reviewsEndpoint.addResource("{reviewerName}")
+    getAllReviewsByAuthorEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(getAllReviewsByAuthorFn, { proxy: true })
     )
 
 
