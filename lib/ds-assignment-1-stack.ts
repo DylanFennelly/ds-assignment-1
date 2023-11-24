@@ -150,6 +150,33 @@ export class DsAssignment1Stack extends cdk.Stack {
       },
     });
 
+
+    //authorizer
+    const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambda/authorizer.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        USER_POOL_ID: this.userPoolId,
+        CLIENT_ID: this.userPoolClientId,
+        TABLE_NAME: reviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
+
+    //request authorizer
+    const requestAuthorizer = new apig.RequestAuthorizer(
+      this,
+      "RequestAuthorizer",
+      {
+        identitySources: [apig.IdentitySource.header("cookie")],
+        handler: authorizerFn,
+        resultsCacheTtl: cdk.Duration.minutes(0),
+      }
+    );
+
     //table permissions
     reviewsTable.grantReadData(getMovieReviewsFn)
     reviewsTable.grantReadWriteData(newReviewFn)
@@ -182,7 +209,11 @@ export class DsAssignment1Stack extends cdk.Stack {
     const reviewsEndpoint = moviesEndpoint.addResource("reviews")
     reviewsEndpoint.addMethod(
       "POST",
-      new apig.LambdaIntegration(newReviewFn, { proxy: true })
+      new apig.LambdaIntegration(newReviewFn, { proxy: true }),
+      {
+        authorizer: requestAuthorizer,
+        authorizationType: apig.AuthorizationType.CUSTOM,
+      }
     )
 
 
