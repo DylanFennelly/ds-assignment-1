@@ -10,30 +10,55 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         const parameters = event?.pathParameters;
         console.log("Paramters:", parameters)
         const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
-        const reviewerName = parameters?.reviewerName ? parameters.reviewerName : undefined;
-    
+        const inputParam = parameters?.reviewerName ? parameters.reviewerName : undefined;
+        let isYear = false                          //boolean flag after regex check to know if inputParam is year or reviewerName
+        const yearRegex = new RegExp(/^\d{4}$/)     //regex to check if string complies to format of 4 digits 
 
-        if (!movieId || !reviewerName){
+        if (!movieId || !inputParam){
             return {
                 statusCode: 404,
                 headers: {
                     "content-type": "application/json",
                   },
-                  body: JSON.stringify({ Message: "Missing movie Id or reviewer name" }),
+                  body: JSON.stringify({ Message: "Missing movie Id" }),
             };
         }
 
-        const commandOutput = await ddbDocClient.send(
-            new QueryCommand({          
+        if (yearRegex.test(inputParam)){        //if inputParam matches regex, it is a year - https://stackoverflow.com/questions/16648679/regexp-in-typescript
+            isYear = true                       //this is assuming a username comprised of only 4 digits is not allowed
+        }
+
+        let commandInput: QueryCommandInput={
+            TableName: process.env.TABLE_NAME,
+        }
+
+        if (isYear){
+            commandInput = {   
+                ...commandInput,       
+                TableName: process.env.TABLE_NAME,
+                KeyConditionExpression: "MovieId = :m and begins_with(ReviewDate, :year)",
+                //FilterExpression: "begins_with(ReviewDate, :year)",
+                ExpressionAttributeValues: {
+                    ":m": movieId,
+                    ":year": inputParam
+                },
+            }
+        }else{
+             commandInput = {   
+                ...commandInput,       
                 TableName: process.env.TABLE_NAME,
                 KeyConditionExpression: "MovieId = :m",
                 FilterExpression: "ReviewerName = :rN",
                 ExpressionAttributeValues: {
                     ":m": movieId,
-                    ":rN": reviewerName
+                    ":rN": inputParam
                 },
-            })
-        );
+            }
+        }
+
+        const commandOutput = await ddbDocClient.send(
+            new QueryCommand(commandInput)
+        )
 
         if(!commandOutput.Items || commandOutput.Items.length === 0){       // Query command always returns data even if nothing is found
             return {                                                        // https://stackoverflow.com/questions/44337856/check-if-specific-object-is-empty-in-typescript
@@ -41,7 +66,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
                 headers: {
                     "content-type": "application/json",
                 },
-                body: JSON.stringify({ Message: "No reviews found. Verify movie Id and reviewer name and try again." }),
+                body: JSON.stringify({ Message: "No reviews found. Verify movie Id and reviewer name/review year and try again." }),
             };
         }
 

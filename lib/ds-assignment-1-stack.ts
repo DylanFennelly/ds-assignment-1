@@ -227,13 +227,13 @@ export class DsAssignment1Stack extends cdk.Stack {
       new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true })
     )
 
-    //specific move reviews by reviewer
+    //specific move reviews by reviewer or year
     const movieReviewsByAuthorEndpoint = movieReviewsEndpoint.addResource("{reviewerName}");
     movieReviewsByAuthorEndpoint.addMethod(
       "GET",
       new apig.LambdaIntegration(getMovieReviewsByAuthorFn, { proxy: true })
     )
-
+    
   }
 
   private addAuthRoute(   //private method to reduce code duplicate
