@@ -29,6 +29,9 @@
     "aws-cdk-lib": "2.88.0",
     "aws-sdk": "^2.1480.0",
     "constructs": "^10.0.0",
-    "source-map-support": "^0.5.21"
+    "source-map-support": "^0.5.21",
+    "axios": "^1.1.2",
+    "jsonwebtoken": "^8.5.1",
+    "jwk-to-pem": "^2.0.5"
   }
 }

@@ -155,7 +155,7 @@ export class DsAssignment1Stack extends cdk.Stack {
     const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
       architecture: lambda.Architecture.ARM_64,
       runtime: lambda.Runtime.NODEJS_16_X,
-      entry: `${__dirname}/../lambda/authorizer.ts`,
+      entry: `${__dirname}/../lambda/auth/authorizer.ts`,
       timeout: cdk.Duration.seconds(10),
       memorySize: 128,
       environment: {

@@ -1,4 +1,4 @@
-import { marshall } from "@aws-sdk/util-dynamodb";
+import { marshall } from "@aws-sdk/util-dynamodb"
 import { Review } from "./types"
 
 export const generateReviewItem = (review: Review) => {
