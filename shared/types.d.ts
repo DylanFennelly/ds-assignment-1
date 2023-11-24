@@ -23,3 +23,9 @@ export type SignInBody = {
     username: string;
 password: string;
 }
+
+export type updateReview = {
+    ReviewDate: string;
+    Content: string;
+    Rating: number;     //number rating from 1-10
+}
