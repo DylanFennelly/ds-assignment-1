@@ -30,8 +30,6 @@ __Auth API:__
 
 ### Authentication..
 
-[Include a screenshot from the AWS console (Cognito User Pools) showing a confirmed user account.]
-
 ![](./images/userpool.png)
 
 ### Independent learning (If relevant)
@@ -56,4 +54,20 @@ __Auth API:__
 + Researched IAM premissions and roles:
     + Files of evidence:
         + lib/app-api.ts
+
+### Steps to run
+Requirements: 
++ Node.js installed
++ AWS CDK configured
+
+
+1. Clone the repository
+2. Navigate to the directory in a terminal and run the following commands:
+
+```
+npm install
+npm run schema
+cdk deploy
+```
+
 
