@@ -23,15 +23,16 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.454.0",
     "@aws-sdk/client-dynamodb": "^3.67.0",
     "@aws-sdk/client-sqs": "^3.360.0",
+    "@aws-sdk/client-translate": "^3.454.0",
     "@aws-sdk/lib-dynamodb": "^3.79.0",
     "@aws-sdk/util-dynamodb": "^3.435.0",
     "ajv": "^8.12.0",
     "aws-cdk-lib": "2.88.0",
     "aws-sdk": "^2.1480.0",
-    "constructs": "^10.0.0",
-    "source-map-support": "^0.5.21",
     "axios": "^1.1.2",
+    "constructs": "^10.0.0",
     "jsonwebtoken": "^8.5.1",
-    "jwk-to-pem": "^2.0.5"
+    "jwk-to-pem": "^2.0.5",
+    "source-map-support": "^0.5.21"
   }
 }

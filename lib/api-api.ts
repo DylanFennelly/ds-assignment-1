@@ -7,6 +7,7 @@ import { generateBatch } from '../shared/util';
 import { reviews } from '../seed/reviews';
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as node from "aws-cdk-lib/aws-lambda-nodejs";
+import * as iam from "aws-cdk-lib/aws-iam"
 
 import { Construct } from 'constructs';
 
@@ -127,7 +128,31 @@ export class AppApi extends Construct {
           REGION: "eu-west-1",
         },
       });
-  
+
+      //IAM permissions for translate review FN to use Translate - https://docs.aws.amazon.com/cdk/v2/guide/permissions.html
+      const translatePolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('TranslateFullAccess')     // https://docs.aws.amazon.com/translate/latest/dg/security-iam-awsmanpol.html
+      const translateRole = new iam.Role(this, 'TranslateLambdaRole', {         //https://stackoverflow.com/questions/62094746/aws-cdk-role-and-policy-creation
+        assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
+      })
+
+      translateRole.addManagedPolicy(translatePolicy)
+
+      //translate review
+      const translateReviewFn = new lambdanode.NodejsFunction(this, "TranslateReviewFn", {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_16_X,
+        entry: `${__dirname}/../lambda/translateReview.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: reviewsTable.tableName,
+          REGION: "eu-west-1",
+        },
+        role: translateRole
+      });
+
+
+      
   
       //authorizer
       const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
@@ -161,6 +186,7 @@ export class AppApi extends Construct {
       reviewsTable.grantReadData(getMovieReviewsByAuthorFn)
       reviewsTable.grantReadData(getAllReviewsByAuthorFn)
       reviewsTable.grantReadWriteData(updateReviewFn)
+      reviewsTable.grantReadData(translateReviewFn)
   
       // #####################
       // ### API ENDPOINTS ###
@@ -228,6 +254,12 @@ export class AppApi extends Construct {
           authorizer: requestAuthorizer,
           authorizationType: apig.AuthorizationType.CUSTOM,
         }
+      )
+
+      const translateReviewEndpoint = movieReviewsByAuthorEndpoint.addResource("translate");
+      translateReviewEndpoint.addMethod(
+        "GET",
+        new apig.LambdaIntegration(translateReviewFn, { proxy: true })
       )
     }
 }
