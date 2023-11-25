@@ -25,7 +25,7 @@ export class AppApi extends Construct {
         ({ userPoolId: this.userPoolId, userPoolClientId: this.userPoolClientId } =
             props);
 
-        // #####################
+    // #####################
     // ### DYNAMODB INIT ###
     // #####################
 
@@ -33,7 +33,7 @@ export class AppApi extends Construct {
     const reviewsTable = new dynamodb.Table(this, "reviewsTable", {
         billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
         partitionKey: { name: "MovieId", type: dynamodb.AttributeType.NUMBER },
-        sortKey: { name: "ReviewDate", type: dynamodb.AttributeType.STRING },     // Adds a sort key to create a composite key
+        sortKey: { name: "ReviewerName", type: dynamodb.AttributeType.STRING },   // Adds a sort key to create a composite key
         removalPolicy: cdk.RemovalPolicy.DESTROY,                                 // (allows a single MovieId to have multiple reviews [one per date])
         tableName: "Reviews",                                                     // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_dynamodb.Table.html
       });

@@ -56,7 +56,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
                 TableName: process.env.TABLE_NAME,
                 Key: {
                     MovieId: movieId,
-                    ReviewDate: body.ReviewDate,
+                    ReviewerName: reviewerName,
                 },
                 UpdateExpression: 'SET Content = :c',
                 ExpressionAttributeValues:{

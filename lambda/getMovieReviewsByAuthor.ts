@@ -36,8 +36,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
             commandInput = {   
                 ...commandInput,       
                 TableName: process.env.TABLE_NAME,
-                KeyConditionExpression: "MovieId = :m and begins_with(ReviewDate, :year)",
-                //FilterExpression: "begins_with(ReviewDate, :year)",
+                KeyConditionExpression: "MovieId = :m",
+                FilterExpression: "begins_with(ReviewDate, :year)",
                 ExpressionAttributeValues: {
                     ":m": movieId,
                     ":year": inputParam
@@ -47,8 +47,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
              commandInput = {   
                 ...commandInput,       
                 TableName: process.env.TABLE_NAME,
-                KeyConditionExpression: "MovieId = :m",
-                FilterExpression: "ReviewerName = :rN",
+                KeyConditionExpression: "MovieId = :m AND ReviewerName = :rN",
                 ExpressionAttributeValues: {
                     ":m": movieId,
                     ":rN": inputParam
