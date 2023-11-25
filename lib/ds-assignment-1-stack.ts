@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { UserPool } from "aws-cdk-lib/aws-cognito";
 import { AuthApi } from './auth-api';
-import { AppApi } from './api-api';
+import { AppApi } from './app-api';
 
 import { Construct } from 'constructs';
 
